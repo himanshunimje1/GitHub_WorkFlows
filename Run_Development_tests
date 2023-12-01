@@ -1,0 +1,54 @@
+# This is a basic workflow to help you get started with Actions
+name: run_development_tests_on_pull_request
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize]
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  develop_run_tests:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        git fetch --prune --unshallow
+    - name: prepare_authentication
+      shell: bash
+      run: |
+        echo ${{ secrets.develop_credentials }} > ./develop_credentials.txt
+        echo ${{ secrets.acceptance_credentials }} > ./acceptance_credentials.txt
+        echo "files_to_deploy=$(git --no-pager diff --name-only --diff-filter=d origin/${{ github.base_ref }} -- force-app | tr '\n' ',' | sed 's/,/, /g' | sed 's/\(.*\),/\1 /')" >> $GITHUB_ENV
+    - name: authenticate_to_develop
+      # original repo forcedotcom/salesforcedx-actions@master
+      uses: marcelblijleven/salesforcedx-actions@master
+      with:
+        args: force:auth:sfdxurl:store --sfdx-url-file=./develop_credentials.txt --alias=develop
+
+    - name: perform_test_run
+      # original repo forcedotcom/salesforcedx-actions@master
+      uses: marcelblijleven/salesforcedx-actions@master
+      with:
+        args: apex run test -l RunLocalTests --target-org Himanshu.nimje@gall.nl.develop -w 15 -y
+    - run: $([ $? -eq 0 ]  || exit 1)
+
+    - name: authenticate_to_acceptance
+      # original repo forcedotcom/salesforcedx-actions@master
+      uses: marcelblijleven/salesforcedx-actions@master
+      with:
+        args: force:auth:sfdxurl:store --sfdx-url-file=./acceptance_credentials.txt --alias=acceptance
+
+    - name: deploy_files_to_acceptance
+      # original repo forcedotcom/salesforcedx-actions@master
+      uses: marcelblijleven/salesforcedx-actions@master
+      continue-on-error: true
+      with:
+        args: 'force:source:deploy -p ''"${{ env.files_to_deploy }}"'' --target-org Himanshu.nimje@gall.nl.acceptance'
+
+    - run: $([ $? -eq 0 ] || echo ::warning::Deployment to acceptance failed; exit 0)
