@@ -1,11 +1,19 @@
 # GitHub_WorkFlows
 
 Pre-Requisites:
+
 CICD - Continuous Integration Continuous Delivery
 ![image](https://github.com/himanshunimje1/GitHub_WorkFlows/assets/33219247/5a988e67-208a-48fc-80b9-ae4799f2d0ce)
 
+
 Considerations:
+
 ![image](https://github.com/himanshunimje1/GitHub_WorkFlows/assets/33219247/126cfe54-d0e6-437d-b267-f8896e29d90b)
+
+
+
+
+
 
 
 
